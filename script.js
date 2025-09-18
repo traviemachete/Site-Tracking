@@ -1,4 +1,4 @@
-// ====== script.js (นับจาก row) ======
+// ====== script.js ======
 const SHEET_ID    = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ';
 const SHEET_NAMES = [
   'เอน คอนเนค',
@@ -10,7 +10,7 @@ const SHEET_NAMES = [
 ];
 const API_KEY     = 'AIzaSyBJ99_hsyJJQe4SyntE4SzORk8S0VhNF7I';
 
-// ===== DOM refs for filters & counts =====
+// ===== DOM =====
 const selType     = document.getElementById('filter-type');
 const selYear     = document.getElementById('filter-year');
 const selWarranty = document.getElementById('filter-warranty');
@@ -19,11 +19,10 @@ const btnReset    = document.getElementById('btn-reset');
 const matchCount  = document.getElementById('match-count');
 const totalCount  = document.getElementById('total-count');
 
-// ===== Map init =====
+// ===== Map =====
 const map = L.map('map').setView([15.5, 101.0], 7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap'
+  maxZoom: 19, attribution: '&copy; OpenStreetMap'
 }).addTo(map);
 
 // ===== Helpers =====
@@ -37,63 +36,68 @@ const num = v => {
 function markerColor(status, warrantyStatus) {
   const st = (status || '').trim();
   const ws = (warrantyStatus || '').trim();
-  if (st === 'เปิดใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
-  if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน') return '#0000E0'; // blue
-  if (st === 'ปิดใช้งานชั่วคราว') return '#EB7302'; // orange
-  if (st === 'ปิดใช้งาน') return '#EB020A'; // red
-  return '#737373'; // fallback gray
+  if (st === 'เปิดใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036';
+  if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน')   return '#0000E0';
+  if (st === 'ปิดใช้งานชั่วคราว')                  return '#EB7302';
+  if (st === 'ปิดใช้งาน')                           return '#EB020A';
+  return '#737373';
 }
 
 async function fetchSheetData(sheetName) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${API_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) {
-    console.error('Load sheet failed:', sheetName, res.status, res.statusText);
-    return null;
-  }
+  if (!res.ok) { console.error('Load sheet failed:', sheetName, res.status, res.statusText); return null; }
   return res.json();
 }
 
 // ===== State =====
-// เก็บ "ทุกแถว" จากทุกชีตไว้ที่นี่ (แม้ไม่มีพิกัด)
-const allRows = [];  // { id, props: { place,type,year,warranty,status, lat, lng, ... } }
-// map ระหว่าง row -> marker (เฉพาะแถวที่มีพิกัด)
-const markerByRowId = new Map(); // id -> Leaflet marker
-// ค่าไว้สร้าง dropdown
-const uniqueVals = { type: new Set(), year: new Set(), warranty: new Set(), status: new Set() };
+// กลุ่มตาม "พื้นที่"
+const placeGroups = new Map(); // place -> { place, items:[], typeSet, yearSet, warrantySet, statusSet, lat, lng, marker }
+const uniqueVals  = { type: new Set(), year: new Set(), warranty: new Set(), status: new Set() };
 
-// ===== Populate <select> with unique values =====
+// สำหรับ popup (เลือกแถวแรกเป็นตัวแทน)
+function pickRepresentative(items) {
+  // เลือกรายการแรกที่มีพิกัด; ถ้าไม่มีเลยก็เลือกตัวแรก
+  const withCoord = items.find(it => Number.isFinite(it.lat) && Number.isFinite(it.lng));
+  return withCoord || items[0];
+}
+
+// เติม options ให้ select
 function populateSelect(selectEl, valuesSet) {
-  const values = [...valuesSet].filter(v => v && v !== '-').sort((a,b)=> String(a).localeCompare(String(b), 'th'));
-  // เคลียร์ (เหลือ option แรก "ทั้งหมด")
-  selectEl.length = 1;
+  const values = [...valuesSet].filter(v => v && v !== '-')
+    .sort((a,b) => String(a).localeCompare(String(b), 'th'));
+  selectEl.length = 1; // คง option แรก "ทั้งหมด"
   for (const v of values) {
     const opt = document.createElement('option');
-    opt.value = v;
-    opt.textContent = v;
+    opt.value = v; opt.textContent = v;
     selectEl.appendChild(opt);
   }
 }
 
-// ===== Apply filters (นับจาก allRows และแสดง/ซ่อน marker ที่แมตช์) =====
-function applyFilters() {
+// ===== Filtering (แบบพื้นที่ยูนีก) =====
+// เงื่อนไข: ถ้ามี "อย่างน้อยหนึ่งรายการในพื้นที่นั้น" ตรงกับฟิลเตอร์ => นับ/แสดงพื้นที่นั้น
+function groupMatchesFilter(group) {
   const fType     = (selType.value || '').trim();
   const fYear     = (selYear.value || '').trim();
   const fWarranty = (selWarranty.value || '').trim();
   const fStatus   = (selStatus.value || '').trim();
 
+  // เร็วสุดใช้ set เช็คก่อน (OR logic ภายในพื้นที่)
+  if (fType     && !group.typeSet.has(fType))         return false;
+  if (fYear     && !group.yearSet.has(fYear))         return false;
+  if (fWarranty && !group.warrantySet.has(fWarranty)) return false;
+  if (fStatus   && !group.statusSet.has(fStatus))     return false;
+
+  return true;
+}
+
+function applyFilters() {
   let shown = 0;
+  for (const group of placeGroups.values()) {
+    const match = groupMatchesFilter(group);
 
-  for (const row of allRows) {
-    const p = row.props;
-    const match =
-      (!fType     || p.type     === fType) &&
-      (!fYear     || p.year     === fYear) &&
-      (!fWarranty || p.warranty === fWarranty) &&
-      (!fStatus   || p.status   === fStatus);
-
-    // อัปเดต marker บนแผนที่เฉพาะแถวที่มี marker
-    const m = markerByRowId.get(row.id);
+    // แสดง/ซ่อน marker ของ "พื้นที่" นี้
+    const m = group.marker;
     if (m) {
       const onMap = map.hasLayer(m);
       if (match && !onMap) m.addTo(map);
@@ -103,12 +107,10 @@ function applyFilters() {
     if (match) shown++;
   }
 
-  // นับจากจำนวน "แถว" ทั้งหมด และจำนวนที่ตรงตัวกรอง
   matchCount.textContent = String(shown);
-  totalCount.textContent = String(allRows.length);
+  totalCount.textContent = String(placeGroups.size); // นับจำนวนพื้นที่ยูนีกทั้งหมด
 }
 
-// ===== Reset filters =====
 function resetFilters() {
   selType.value = '';
   selYear.value = '';
@@ -117,7 +119,7 @@ function resetFilters() {
   applyFilters();
 }
 
-// ===== Render all sheets =====
+// ===== Load & Build =====
 async function renderAllSheets() {
   for (const name of SHEET_NAMES) {
     try {
@@ -126,7 +128,6 @@ async function renderAllSheets() {
 
       const headers = data.values[0].map(h => (h || '').trim());
       const rows    = data.values.slice(1);
-
       const col = key => headers.indexOf(key);
 
       const idxLat          = col('Lat');
@@ -140,11 +141,10 @@ async function renderAllSheets() {
       const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
       const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-      rows.forEach((r, i) => {
-        const lat = num(r[idxLat]);
-        const lng = num(r[idxLng]);
-
+      rows.forEach(r => {
         const place        = (r[idxPlace] || '-').toString().trim();
+        const lat          = num(r[idxLat]);
+        const lng          = num(r[idxLng]);
         const type         = (r[idxType] || '-').toString().trim();
         const status       = (r[idxStatus]  || '').toString().trim();
         const wStatus      = (r[idxWStatus] || '').toString().trim();
@@ -153,70 +153,87 @@ async function renderAllSheets() {
         const contactPhone = (r[idxContactPhone] || '-').toString().trim();
         const warrantyDate = (r[idxWarrantyDate] || '-').toString().trim();
 
-        // เก็บค่า unique สำหรับสร้างตัวเลือก filter (จากทุกแถว)
+        // เก็บค่าลง set สำหรับสร้างตัวเลือก
         if (type)    uniqueVals.type.add(type);
         if (year)    uniqueVals.year.add(year);
         if (wStatus) uniqueVals.warranty.add(wStatus);
         if (status)  uniqueVals.status.add(status);
 
-        // --- เก็บเป็น "row" เสมอ แม้ไม่มีพิกัด ---
-        const id = `${name}::${i+2}`; // อ้างอิงชีต+เลขแถว (แถว header คือบรรทัด 1 เลยบวก 2)
-        const props = { place, type, year, warranty: wStatus, status, lat, lng,
-                        contactName, contactPhone, warrantyDate };
-        allRows.push({ id, props });
-
-        // --- สร้าง marker เฉพาะแถวที่มีพิกัดเท่านั้น ---
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          const color = markerColor(status, wStatus);
-          const marker = L.circleMarker([lat, lng], {
-            radius: 7,
-            color,
-            fillColor: color,
-            fillOpacity: 0.85,
-            weight: 1
+        // รวมเป็นกลุ่มตาม "พื้นที่"
+        if (!placeGroups.has(place)) {
+          placeGroups.set(place, {
+            place,
+            items: [],
+            typeSet: new Set(),
+            yearSet: new Set(),
+            warrantySet: new Set(),
+            statusSet: new Set(),
+            lat: undefined,
+            lng: undefined,
+            marker: null
           });
-
-          // Tooltip hover = ชื่อพื้นที่
-          marker.bindTooltip(String(place), {
-            sticky: true,
-            direction: 'top',
-            offset: [0, -6],
-            opacity: 0.95
-          });
-
-          // Popup รายละเอียด
-          marker.bindPopup(`
-            <b>${place}</b><br/>
-            Type: ${type}<br/>
-            ปีงบประมาณ: ${year || '-'}<br/>
-            สถานะ: ${status}<br/>
-            สถานะประกัน: ${wStatus}<br/>
-            วันที่หมดระยะประกัน: ${warrantyDate}<br/>
-            ผู้ดูแล: ${contactName}<br/>
-            เบอร์โทร: ${contactPhone}
-          `);
-
-          marker.addTo(map);                   // แสดงครั้งแรกทั้งหมด
-          markerByRowId.set(id, marker);       // map จาก row -> marker
+        }
+        const g = placeGroups.get(place);
+        g.items.push({ place, type, status, wStatus, year, lat, lng, contactName, contactPhone, warrantyDate });
+        g.typeSet.add(type);
+        if (year) g.yearSet.add(year);
+        if (wStatus) g.warrantySet.add(wStatus);
+        if (status) g.statusSet.add(status);
+        // เก็บพิกัดตัวแทน (แถวแรกที่มีพิกัด)
+        if ((!Number.isFinite(g.lat) || !Number.isFinite(g.lng)) &&
+            Number.isFinite(lat) && Number.isFinite(lng)) {
+          g.lat = lat; g.lng = lng;
         }
       });
-    } catch (e) {
+    } catch(e) {
       console.error('Sheet error:', name, e);
     }
   }
 
-  // เติมตัวเลือกจากค่าจริงในชีท
+  // สร้าง marker ต่อ "พื้นที่"
+  for (const group of placeGroups.values()) {
+    if (Number.isFinite(group.lat) && Number.isFinite(group.lng)) {
+      const rep = pickRepresentative(group.items);
+      const color = markerColor(rep.status, rep.wStatus);
+      const m = L.circleMarker([group.lat, group.lng], {
+        radius: 7, color, fillColor: color, fillOpacity: 0.85, weight: 1
+      });
+
+      // Tooltip = ชื่อพื้นที่
+      m.bindTooltip(String(group.place), {
+        sticky: true, direction: 'top', offset: [0, -6], opacity: 0.95
+      });
+
+      // Popup = ใช้ข้อมูลตัวแทน (พร้อมจำนวนรายการในพื้นที่)
+      m.bindPopup(`
+        <b>${group.place}</b><br/>
+        รายการในพื้นที่นี้: ${group.items.length}<br/>
+        Type: ${rep.type}<br/>
+        ปีงบประมาณ: ${rep.year || '-'}<br/>
+        สถานะ: ${rep.status}<br/>
+        สถานะประกัน: ${rep.wStatus}<br/>
+        วันที่หมดระยะประกัน: ${rep.warrantyDate}<br/>
+        ผู้ดูแล: ${rep.contactName}<br/>
+        เบอร์โทร: ${rep.contactPhone}
+      `);
+
+      m.addTo(map);
+      group.marker = m;
+    }
+  }
+
+  // เติมตัวเลือก
   populateSelect(selType, uniqueVals.type);
   populateSelect(selYear, uniqueVals.year);
   populateSelect(selWarranty, uniqueVals.warranty);
   populateSelect(selStatus, uniqueVals.status);
 
-  // อัปเดตตัวนับครั้งแรก (นับจากจำนวนแถวทั้งหมด)
-  totalCount.textContent = String(allRows.length);
+  // อัปเดตตัวนับครั้งแรก (นับจำนวน "พื้นที่ยูนีก")
+  totalCount.textContent = String(placeGroups.size);
   applyFilters();
 }
 
-// ===== Event listeners =====
+// Events
 selType.addEventListener('change', applyFilters);
 selYear.addEventListener('change', applyFilters);
 selWarranty.addEventListener('change', applyFilters);
