@@ -15,10 +15,10 @@ function getColor(status, warrantyDate) {
   const now = new Date();
   const warranty = new Date(warrantyDate);
 
-  if (status === 'เปิดใช้งาน' && warranty >= now) return 'green';   // อยู่ในประกัน
-  if (status === 'เปิดใช้งาน' && warranty < now) return 'gray';     // หมดประกัน
-  if (status === 'ปิดใช้งาน') return 'red';                          // ปิดใช้งาน
-  return 'blue'; // fallback
+  if (status === 'เปิดใช้งาน' && warranty >= now) return 'green';
+  if (status === 'เปิดใช้งาน' && warranty < now) return 'gray';
+  if (status === 'ปิดใช้งาน') return 'red';
+  return 'blue';
 }
 
 async function renderAllSheets() {
@@ -31,20 +31,29 @@ async function renderAllSheets() {
       const headers = rows[0];
       const body = rows.slice(1);
 
-      body.forEach(row => {
-        const rowData = Object.fromEntries(headers.map((h, i) => [h, row[i] || ""]));
+      // หา index ที่แม่นยำจากชื่อคอลัมน์แทนการ hardcode
+      const latIdx = headers.findIndex(h => h.trim() === 'Lat');
+      const lngIdx = headers.findIndex(h => h.trim() === 'Long');
+      const areaIdx = headers.findIndex(h => h.trim() === 'พื้นที่');
+      const typeIdx = headers.findIndex(h => h.trim() === 'Type');
+      const statusIdx = headers.findIndex(h => h.trim() === 'สถานะ');
+      const nameIdx = headers.findIndex(h => h.trim() === 'ชื่อผู้ดูแล');
+      const phoneIdx = headers.findIndex(h => h.trim() === 'เบอร์โทร/ผู้ดูแล');
+      const warrantyIdx = headers.findIndex(h => h.trim() === 'วันที่หมดระยะประกัน');
 
-        const lat = parseFloat(rowData['Lat']);
-        const lng = parseFloat(rowData['Long']);
-        const status = rowData['สถานะ'];
-        const warranty = rowData['วันที่หมดระยะประกัน'];
+      body.forEach(row => {
+        const lat = parseFloat(row[latIdx]);
+        const lng = parseFloat(row[lngIdx]);
+        const status = row[statusIdx]?.trim() || '';
+        const warranty = row[warrantyIdx]?.trim() || '';
+
         const popupText = `
-          <b>${rowData['พื้นที่']}</b><br>
-          ประเภท: ${rowData['Type']}<br>
-          สถานะ: ${rowData['สถานะ']}<br>
-          ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
-          เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
-          หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
+          <b>${row[areaIdx]}</b><br>
+          ประเภท: ${row[typeIdx]}<br>
+          สถานะ: ${status}<br>
+          ผู้ดูแล: ${row[nameIdx]}<br>
+          เบอร์โทร: ${row[phoneIdx]}<br>
+          หมดประกัน: ${warranty}
         `;
 
         if (!isNaN(lat) && !isNaN(lng)) {
