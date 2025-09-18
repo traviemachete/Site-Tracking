@@ -1,6 +1,4 @@
-// ====== script.js ======
-
-// ====== ปรับค่านี้ให้ตรงกับของคุณ ======
+// ====== script.js ====== 
 const SHEET_ID    = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ';
 const SHEET_NAMES = [
   'เอน คอนเนค',
@@ -11,9 +9,8 @@ const SHEET_NAMES = [
   'เขต 7'
 ];
 const API_KEY     = 'AIzaSyBJ99_hsyJJQe4SyntE4SzORk8S0VhNF7I';
-// =======================================
 
-// ===== DOM refs =====
+// ===== DOM refs for filters & counts =====
 const selType     = document.getElementById('filter-type');
 const selYear     = document.getElementById('filter-year');
 const selWarranty = document.getElementById('filter-warranty');
@@ -41,9 +38,9 @@ function markerColor(status, warrantyStatus) {
   const st = (status || '').trim();
   const ws = (warrantyStatus || '').trim();
   if (st === 'เปิดใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
-  if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน')   return '#0000E0'; // blue
-  if (st === 'ปิดใช้งานชั่วคราว')                 return '#EB7302'; // orange
-  if (st === 'ปิดใช้งาน')                          return '#EB020A'; // red
+  if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน') return '#0000E0'; // blue
+  if (st === 'ปิดใช้งานชั่วคราว') return '#EB7302'; // orange
+  if (st === 'ปิดใช้งาน') return '#EB020A'; // red
   return '#737373'; // fallback gray
 }
 
@@ -58,27 +55,14 @@ async function fetchSheetData(sheetName) {
 }
 
 // ===== State =====
-// กันซ้ำด้วยคีย์ยูนีกของ "โครงการ"
-const seenKeys = new Set();
-// เก็บเฉพาะรายการโครงการที่ยูนีก (ใช้สำหรับฟิลเตอร์/นับ)
-const projectItems = []; // { key, marker, props: { place, type, year, warranty, status } }
-// เก็บค่าทำ dropdown
+const allMarkers = []; // { marker, props: { type, year, warranty, status, place } }
 const uniqueVals = { type: new Set(), year: new Set(), warranty: new Set(), status: new Set() };
 
-// สร้างคีย์ยูนีกของโครงการ (แนะนำให้เปลี่ยนมาใช้ ProjectID ถ้ามี)
-function makeProjectKey(place, lat, lng /*, type*/) {
-  const p = String(place || '').trim();
-  const la = Number.isFinite(lat) ? lat.toFixed(5) : 'NA';
-  const lo = Number.isFinite(lng) ? lng.toFixed(5) : 'NA';
-  return `${p}|${la}|${lo}`;
-  // ถ้าต้องการรวม Type ด้วย:
-  // return `${p}|${String(type||'').trim()}|${la}|${lo}`;
-}
-
-function populateSelect(selectEl, setVals) {
-  const values = [...setVals].filter(v => v && v !== '-')
-    .sort((a,b)=> String(a).localeCompare(String(b), 'th'));
-  selectEl.length = 1; // คง option "ทั้งหมด" ไว้อันแรก
+// ===== Populate <select> with unique values =====
+function populateSelect(selectEl, valuesSet) {
+  const values = [...valuesSet].filter(v => v && v !== '-').sort((a,b)=> String(a).localeCompare(String(b), 'th'));
+  // Clear (keep the first 'ทั้งหมด')
+  selectEl.length = 1;
   for (const v of values) {
     const opt = document.createElement('option');
     opt.value = v;
@@ -87,6 +71,7 @@ function populateSelect(selectEl, setVals) {
   }
 }
 
+// ===== Apply filters (show/hide markers) =====
 function applyFilters() {
   const fType     = (selType.value || '').trim();
   const fYear     = (selYear.value || '').trim();
@@ -94,7 +79,7 @@ function applyFilters() {
   const fStatus   = (selStatus.value || '').trim();
 
   let shown = 0;
-  for (const item of projectItems) {
+  for (const item of allMarkers) {
     const { marker, props } = item;
     const match =
       (!fType     || props.type     === fType) &&
@@ -103,16 +88,19 @@ function applyFilters() {
       (!fStatus   || props.status   === fStatus);
 
     const onMap = map.hasLayer(marker);
-    if (match && !onMap) marker.addTo(map);
-    else if (!match && onMap) marker.removeFrom(map);
-
+    if (match && !onMap) {
+      marker.addTo(map);
+    } else if (!match && onMap) {
+      marker.removeFrom(map);
+    }
     if (match) shown++;
   }
 
   matchCount.textContent = String(shown);
-  totalCount.textContent = String(projectItems.length);
+  totalCount.textContent = String(allMarkers.length);
 }
 
+// ===== Reset filters =====
 function resetFilters() {
   selType.value = '';
   selYear.value = '';
@@ -130,20 +118,21 @@ async function renderAllSheets() {
 
       const headers = data.values[0].map(h => (h || '').trim());
       const rows    = data.values.slice(1);
+
       const col = key => headers.indexOf(key);
 
       const idxLat          = col('Lat');
       const idxLng          = col('Long');
       const idxPlace        = col('พื้นที่');
       const idxType         = col('Type');
-      const idxStatus       = col('สถานะ');
-      const idxWStatus      = col('สถานะประกัน');
-      const idxBudgetYear   = col('ปีงบประมาณ'); // ถ้าไม่มีคอลัมน์นี้ ค่าจะเป็น ''
+      const idxStatus       = col('สถานะ');           // ใช้งาน/ปิดใช้งาน
+      const idxWStatus      = col('สถานะประกัน');     // อยู่ในประกัน/หมดประกัน
+      const idxBudgetYear   = col('ปีงบประมาณ');       // ✅ เพิ่มปีงบประมาณ
       const idxContactName  = col('ชื่อผู้ดูแล');
       const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
       const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-      rows.forEach(r => {
+      rows.forEach((r) => {
         const lat = num(r[idxLat]);
         const lng = num(r[idxLng]);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -157,17 +146,11 @@ async function renderAllSheets() {
         const contactPhone = (r[idxContactPhone] || '-').toString().trim();
         const warrantyDate = (r[idxWarrantyDate] || '-').toString().trim();
 
-        // ----- กันซ้ำ -----
-        const key = makeProjectKey(place, lat, lng /*, type*/);
-        if (seenKeys.has(key)) return;
-        seenKeys.add(key);
-        // -------------------
-
-        // unique values สำหรับ dropdown
-        if (type)    uniqueVals.type.add(type);
-        if (year)    uniqueVals.year.add(year);
-        if (wStatus) uniqueVals.warranty.add(wStatus);
-        if (status)  uniqueVals.status.add(status);
+        // เก็บ unique values สำหรับสร้างตัวเลือก filter
+        if (type)     uniqueVals.type.add(type);
+        if (year)     uniqueVals.year.add(year);
+        if (wStatus)  uniqueVals.warranty.add(wStatus);
+        if (status)   uniqueVals.status.add(status);
 
         const color = markerColor(status, wStatus);
         const marker = L.circleMarker([lat, lng], {
@@ -178,7 +161,7 @@ async function renderAllSheets() {
           weight: 1
         });
 
-        // Tooltip = ชื่อพื้นที่ เมื่อ hover
+        // Tooltip hover = ชื่อพื้นที่
         marker.bindTooltip(String(place), {
           sticky: true,
           direction: 'top',
@@ -198,13 +181,41 @@ async function renderAllSheets() {
           เบอร์โทร: ${contactPhone}
         `);
 
-        // ใส่ลงแผนที่และเก็บเป็นโครงการยูนีก
+        // ใส่ marker ลง map + เก็บ state
         marker.addTo(map);
-        projectItems.push({
-          key,
+        allMarkers.push({
           marker,
-          props: { place, type, year, warranty: wStatus, status }
+          props: {
+            place,
+            type,
+            year,
+            warranty: wStatus,
+            status
+          }
         });
       });
     } catch (e) {
-      console
+      console.error('Sheet error:', name, e);
+    }
+  }
+
+  // สร้างรายการตัวเลือกจากค่าจริงในชีท
+  populateSelect(selType, uniqueVals.type);
+  populateSelect(selYear, uniqueVals.year);
+  populateSelect(selWarranty, uniqueVals.warranty);
+  populateSelect(selStatus, uniqueVals.status);
+
+  // อัปเดตตัวนับครั้งแรก
+  totalCount.textContent = String(allMarkers.length);
+  applyFilters();
+}
+
+// ===== Event listeners =====
+selType.addEventListener('change', applyFilters);
+selYear.addEventListener('change', applyFilters);
+selWarranty.addEventListener('change', applyFilters);
+selStatus.addEventListener('change', applyFilters);
+btnReset.addEventListener('click', resetFilters);
+
+// Run
+renderAllSheets();
