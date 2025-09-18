@@ -1,62 +1,110 @@
-const SHEET_ID = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ';
-const SHEET_NAMES = ['เอน คอนเนทค', 'อินโนวาเทค โซลูชั่น', 'พินพอยท์ อินโนเวชั่น', 'เอสทีอาร์ อินโนเวชั่น', 'อีสาน-ส่วนกลาง', 'เขต 7'];
-const API_KEY = 'AIzaSyBJ99_hsyJJQe4SyntE4SzORk8S0VhNF7I';
+// ====== ปรับค่านี้ให้ตรงกับของคุณ ======
+const SHEET_ID    = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ';
+const SHEET_NAMES = [
+  'เอน คอนเนทค',
+  'อินโนวาเทค โซลูชั่น',
+  'พินพอยท์ อินโนเวชั่น',
+  'เอสทีอาร์ อินโนเวชั่น',
+  'อีสาน-ส่วนกลาง',
+  'เขต 7'
+];
+const API_KEY     = 'AIzaSyBJ99_hsyJJQe4SyntE4SzORk8S0VhNF7I';
+// =======================================
 
+// Init map
 const map = L.map('map').setView([15.5, 101.0], 7);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
 
+// Helper: parse number safely
+const num = v => {
+  if (v == null) return NaN;
+  const cleaned = String(v).trim().replace(/,/g, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+};
+
+// Marker color by rules
+function markerColor(status, warrantyStatus) {
+  const st = (status || '').trim();
+  const ws = (warrantyStatus || '').trim();
+  if (st === 'ใช้งาน' && ws === 'อยู่ในประกัน') return '#2ecc71'; // green
+  if (st === 'ใช้งาน' && ws === 'หมดประกัน')  return '#bdc3c7'; // gray
+  if (st === 'ปิดใช้งาน')                      return '#e74c3c'; // red
+  return '#3498db'; // fallback
+}
+
+// Fetch one sheet
 async function fetchSheetData(sheetName) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${API_KEY}`;
   const res = await fetch(url);
+  if (!res.ok) {
+    console.error('Load sheet failed:', sheetName, res.status, res.statusText);
+    return null;
+  }
   return res.json();
 }
 
-function getColor(status, warrantyStatus) {
-  if (status === 'ใช้งาน' && warrantyStatus === 'อยู่ในประกัน') return 'green';
-  if (status === 'ใช้งาน' && warrantyStatus === 'หมดประกัน') return 'blue';
-  if (status === 'ปิดใช้งาน') return 'red';
-  return 'gray'; // fallback
-}
-
+// Render all sheets
 async function renderAllSheets() {
   for (const name of SHEET_NAMES) {
     try {
       const data = await fetchSheetData(name);
-      const rows = data.values;
-      if (!rows || rows.length < 2) continue;
+      if (!data || !data.values || data.values.length < 2) continue;
 
-      const headers = rows[0];
-      const body = rows.slice(1);
+      const headers = data.values[0].map(h => (h || '').trim());
+      const rows    = data.values.slice(1);
 
-      body.forEach(row => {
-        const rowData = Object.fromEntries(headers.map((h, i) => [h.trim(), row[i] || ""]));
+      const col = key => headers.indexOf(key);
 
-        const lat = parseFloat(rowData['Lat']);
-        const lng = parseFloat(rowData['Long']);
-        const status = rowData['สถานะ'].trim();
-        const warrantyStatus = rowData['สถานะประกัน'].trim();
+      const idxLat          = col('Lat');
+      const idxLng          = col('Long');
+      const idxPlace        = col('พื้นที่');
+      const idxType         = col('Type');
+      const idxStatus       = col('สถานะ');           // ใช้งาน/ปิดใช้งาน
+      const idxWStatus      = col('สถานะประกัน');     // อยู่ในประกัน/หมดประกัน
+      const idxContactName  = col('ชื่อผู้ดูแล');
+      const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
+      const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-        const popupText = `
-          <b>${rowData['พื้นที่']}</b><br>
-          ประเภท: ${rowData['Type']}<br>
-          สถานะ: ${rowData['สถานะ']}<br>
-          สถานะประกัน: ${warrantyStatus}<br>
-          ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
-          เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
-          หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
-        `;
+      rows.forEach((r) => {
+        const lat = num(r[idxLat]);
+        const lng = num(r[idxLng]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          L.circleMarker([lat, lng], {
-            radius: 8,
-            color: getColor(status, warrantyStatus),
-            fillOpacity: 0.7
-          }).bindPopup(popupText).addTo(map);
-        }
+        const place        = r[idxPlace] || '-';
+        const type         = r[idxType] || '-';
+        const status       = (r[idxStatus]  || '').trim();
+        const wStatus      = (r[idxWStatus] || '').trim();
+        const contactName  = r[idxContactName]  || '-';
+        const contactPhone = r[idxContactPhone] || '-';
+        const warrantyDate = r[idxWarrantyDate] || '-';
+
+        const color = markerColor(status, wStatus);
+        const marker = L.circleMarker([lat, lng], {
+          radius: 7,
+          color,
+          fillColor: color,
+          fillOpacity: 0.85,
+          weight: 1
+        });
+
+        marker.bindPopup(`
+          <b>${place}</b><br/>
+          ประเภท: ${type}<br/>
+          สถานะ: ${status}<br/>
+          สถานะประกัน: ${wStatus}<br/>
+          วันที่หมดระยะประกัน: ${warrantyDate}<br/>
+          ผู้ดูแล: ${contactName}<br/>
+          เบอร์โทร: ${contactPhone}
+        `);
+
+        marker.addTo(map);
       });
-
-    } catch (err) {
-      console.error('❌ Error loading sheet:', name, err);
+    } catch (e) {
+      console.error('Sheet error:', name, e);
     }
   }
 }
