@@ -70,45 +70,41 @@ async function renderAllSheets() {
       const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
       const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-      rows.forEach((r) => {
-  const lat = num(r[idxLat]);
-  const lng = num(r[idxLng]);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
-  const place        = r[idxPlace] || '-';
-  const type         = r[idxType] || '-';
-  const status       = (r[idxStatus]  || '').trim();
-  const wStatus      = (r[idxWStatus] || '').trim();
-  const contactName  = r[idxContactName]  || '-';
-  const contactPhone = r[idxContactPhone] || '-';
-  const warrantyDate = r[idxWarrantyDate] || '-';
-
-  const color = markerColor(status, wStatus);
-
-  const popupHtml = `
-    <b>${place}</b><br/>
-    ประเภท: ${type}<br/>
-    สถานะ: ${status}<br/>
-    สถานะประกัน: ${wStatus}<br/>
-    วันที่หมดระยะประกัน: ${warrantyDate}<br/>
-    ผู้ดูแล: ${contactName}<br/>
-    เบอร์โทร: ${contactPhone}
-  `;
-
-  L.circleMarker([lat, lng], {
-    radius: 7,
-    color,
-    fillColor: color,
-    fillOpacity: 0.85,
-    weight: 1
-  })
-    .bindPopup(popupHtml)
-    .bindTooltip(place, { direction: 'top', offset: [0, -8] })
-    .addTo(map);
-
-  // ถ้าอยากให้ซูมครอบทั้งหมดภายหลัง ให้มีตัวแปร allLatLng = [] ไว้ด้านบน
-  // แล้วคงบรรทัดนี้ไว้; ถ้าไม่ใช้ fitBounds ก็ลบบรรทัดนี้ออกได้
-  allLatLng?.push([lat, lng]);
-});
+  rows.forEach((r) => {
+    const lat = num(r[idxLat]);
+    const lng = num(r[idxLng]); 
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return; 
+    const place = r[idxPlace] || '-'; 
+    const type = r[idxType] || '-'; 
+    const status = (r[idxStatus] || '').trim(); 
+    const wStatus = (r[idxWStatus] || '').trim(); 
+    const contactName = r[idxContactName] || '-'; 
+    const contactPhone = r[idxContactPhone] || '-'; 
+    const warrantyDate = r[idxWarrantyDate] || '-'; 
+    const color = markerColor(status, wStatus); 
+    const marker = L.circleMarker([lat, lng], {
+      radius: 7, 
+      color, 
+      fillColor: color, 
+      fillOpacity: 0.85, 
+      weight: 1 
+    }); 
+    
+    marker.bindPopup( 
+      <b>${place}</b><br/> 
+      ประเภท: ${type}<br/> 
+      สถานะ: ${status}<br/> 
+      สถานะประกัน: ${wStatus}<br/>
+      วันที่หมดระยะประกัน: ${warrantyDate}<br/> 
+      ผู้ดูแล: ${contactName}<br/> 
+      เบอร์โทร: ${contactPhone} 
+    ); 
+      marker.addTo(map); 
+    }); 
+  } catch (e) { 
+    console.error('Sheet error:', name, e); 
+  }
+ } 
+} 
 
 renderAllSheets();
