@@ -84,6 +84,12 @@ async function renderAllSheets() {
         const warrantyDate = r[idxWarrantyDate] || '-';
 
         const color = markerColor(status, wStatus);
+        
+        const marker = L.circleMarker([lat, lng], {...})
+          .bindPopup(popupHtml)
+          .bindTooltip(place, { direction: 'top', offset: [0, -8] })
+          .addTo(map);
+        
         const marker = L.circleMarker([lat, lng], {
           radius: 7,
           color,
