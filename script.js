@@ -103,9 +103,6 @@ async function renderAllSheets() {
             ผู้ดูแล: ${contactName}<br/>
             เบอร์โทร: ${contactPhone}
           `)
-          .bindTooltip(place, { direction: 'top', offset: [0, -8] })
-          .addTo(map);
-        allLatLng.push([lat, lng]);
       });
     } catch (e) {
       console.error('Sheet error:', name, e);
