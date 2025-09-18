@@ -82,7 +82,8 @@ async function renderAllSheets() {
         const contactName  = r[idxContactName]  || '-';
         const contactPhone = r[idxContactPhone] || '-';
         const warrantyDate = r[idxWarrantyDate] || '-';
-        const color = markerColor(status, wStatus);        
+        const color = markerColor(status, wStatus); 
+        
         const marker = L.circleMarker([lat, lng], {
           radius: 7,
           color,
@@ -90,9 +91,8 @@ async function renderAllSheets() {
           fillOpacity: 0.85,
           weight: 1
         });
-          .bindPopup(popupHtml)
-          .bindTooltip(place, { direction: 'top', offset: [0, -8] })
-          .addTo(map);
+
+
         marker.bindPopup(`
           <b>${place}</b><br/>
           ประเภท: ${type}<br/>
@@ -101,9 +101,9 @@ async function renderAllSheets() {
           วันที่หมดระยะประกัน: ${warrantyDate}<br/>
           ผู้ดูแล: ${contactName}<br/>
           เบอร์โทร: ${contactPhone}
-        `);
-
-        marker.addTo(map);
+        `)
+        .bindTooltip(place, { direction: 'top', offset: [0, -8] })
+        .addTo(map);
       });
     } catch (e) {
       console.error('Sheet error:', name, e);
