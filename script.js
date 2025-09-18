@@ -82,14 +82,7 @@ async function renderAllSheets() {
         const contactName  = r[idxContactName]  || '-';
         const contactPhone = r[idxContactPhone] || '-';
         const warrantyDate = r[idxWarrantyDate] || '-';
-
-        const color = markerColor(status, wStatus);
-        
-        const marker = L.circleMarker([lat, lng], {...})
-          .bindPopup(popupHtml)
-          .bindTooltip(place, { direction: 'top', offset: [0, -8] })
-          .addTo(map);
-        
+        const color = markerColor(status, wStatus);        
         const marker = L.circleMarker([lat, lng], {
           radius: 7,
           color,
@@ -97,7 +90,9 @@ async function renderAllSheets() {
           fillOpacity: 0.85,
           weight: 1
         });
-
+          .bindPopup(popupHtml)
+          .bindTooltip(place, { direction: 'top', offset: [0, -8] })
+          .addTo(map);
         marker.bindPopup(`
           <b>${place}</b><br/>
           ประเภท: ${type}<br/>
