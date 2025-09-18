@@ -1,5 +1,4 @@
 /* ====== style.css ====== */
-
 /* Layout base */
 html, body {
   height: 100%;
@@ -27,6 +26,7 @@ html, body {
   line-height: 1.4;
   box-shadow: 0 2px 6px rgba(0,0,0,.1);
 }
+
 .legend .dot {
   display: inline-block;
   width: 10px;
@@ -52,17 +52,20 @@ html, body {
   backdrop-filter: blur(4px);
   font-size: 13px;
 }
+
 .filter-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 10px;
 }
+
 .filter-row label {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-weight: 600;
 }
+
 .filter-row select {
   padding: 6px 8px;
   border: 1px solid #d0d5dd;
@@ -70,6 +73,7 @@ html, body {
   background: #fff;
   font-size: 13px;
 }
+
 .filter-actions {
   display: flex;
   justify-content: space-between;
@@ -77,6 +81,7 @@ html, body {
   gap: 8px;
   margin-top: 10px;
 }
+
 #btn-reset {
   padding: 6px 10px;
   border: 1px solid #d0d5dd;
@@ -85,5 +90,11 @@ html, body {
   cursor: pointer;
   font-weight: 600;
 }
-#btn-reset:hover { background: #efefef; }
-.count { font-weight: 600; }
+
+#btn-reset:hover {
+  background: #efefef;
+}
+
+.count {
+  font-weight: 600;
+}
