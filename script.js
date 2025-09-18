@@ -13,9 +13,9 @@ async function fetchSheetData(sheetName) {
 
 function getColor(status, warrantyStatus) {
   if (status === 'ใช้งาน' && warrantyStatus === 'อยู่ในประกัน') return 'green';
-  if (status === 'ใช้งาน' && warrantyStatus === 'หมดประกัน') return 'gray';
+  if (status === 'ใช้งาน' && warrantyStatus === 'หมดประกัน') return 'blue';
   if (status === 'ปิดใช้งาน') return 'red';
-  return 'blue'; // fallback
+  return 'gray'; // fallback
 }
 
 async function renderAllSheets() {
