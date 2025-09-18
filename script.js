@@ -33,7 +33,7 @@ function markerColor(status, warrantyStatus) {
   if (st === 'ใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
   if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน') return '#0B00E0'; // blue
   if (st === 'ปิดใช้งานชั่วคราว') return '#EB7302'; // orange
-  if (st === 'ปิดใช้งาน')                      return 'EB020A'; // red
+  if (st === 'ปิดใช้งาน')                      return '#EB020A'; // red
   return '#737373'; // fallback gray
 }
 
