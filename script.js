@@ -11,14 +11,11 @@ async function fetchSheetData(sheetName) {
   return res.json();
 }
 
-function getColor(status, warrantyDate) {
-  const now = new Date();
-  const warranty = new Date(warrantyDate);
-
-  if (status === 'เปิดใช้งาน' && warranty >= now) return 'green';
-  if (status === 'เปิดใช้งาน' && warranty < now) return 'gray';
+function getColor(status, warrantyStatus) {
+  if (status === 'ใช้งาน' && warrantyStatus === 'อยู่ในประกัน') return 'green';
+  if (status === 'ใช้งาน' && warrantyStatus === 'หมดประกัน') return 'gray';
   if (status === 'ปิดใช้งาน') return 'red';
-  return 'blue';
+  return 'blue'; // fallback
 }
 
 async function renderAllSheets() {
@@ -31,39 +28,33 @@ async function renderAllSheets() {
       const headers = rows[0];
       const body = rows.slice(1);
 
-      // หา index ที่แม่นยำจากชื่อคอลัมน์แทนการ hardcode
-      const latIdx = headers.findIndex(h => h.trim() === 'Lat');
-      const lngIdx = headers.findIndex(h => h.trim() === 'Long');
-      const areaIdx = headers.findIndex(h => h.trim() === 'พื้นที่');
-      const typeIdx = headers.findIndex(h => h.trim() === 'Type');
-      const statusIdx = headers.findIndex(h => h.trim() === 'สถานะ');
-      const nameIdx = headers.findIndex(h => h.trim() === 'ชื่อผู้ดูแล');
-      const phoneIdx = headers.findIndex(h => h.trim() === 'เบอร์โทร/ผู้ดูแล');
-      const warrantyIdx = headers.findIndex(h => h.trim() === 'วันที่หมดระยะประกัน');
-
       body.forEach(row => {
-        const lat = parseFloat(row[latIdx]);
-        const lng = parseFloat(row[lngIdx]);
-        const status = row[statusIdx]?.trim() || '';
-        const warranty = row[warrantyIdx]?.trim() || '';
+        const rowData = Object.fromEntries(headers.map((h, i) => [h.trim(), row[i] || ""]));
+
+        const lat = parseFloat(rowData['Lat']);
+        const lng = parseFloat(rowData['Long']);
+        const status = rowData['สถานะ'].trim();
+        const warrantyStatus = rowData['สถานะประกัน'].trim();
 
         const popupText = `
-          <b>${row[areaIdx]}</b><br>
-          ประเภท: ${row[typeIdx]}<br>
-          สถานะ: ${row[statusIdx]}<br>
-          ผู้ดูแล: ${row[nameIdx]}<br>
-          เบอร์โทร: ${row[phoneIdx]}<br>
-          หมดประกัน: ${row[warrantyIdx]}<br>
+          <b>${rowData['พื้นที่']}</b><br>
+          ประเภท: ${rowData['Type']}<br>
+          สถานะ: ${status}<br>
+          สถานะประกัน: ${warrantyStatus}<br>
+          ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
+          เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
+          หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
         `;
 
         if (!isNaN(lat) && !isNaN(lng)) {
           L.circleMarker([lat, lng], {
             radius: 8,
-            color: getColor(status, warranty),
+            color: getColor(status, warrantyStatus),
             fillOpacity: 0.7
           }).bindPopup(popupText).addTo(map);
         }
       });
+
     } catch (err) {
       console.error('❌ Error loading sheet:', name, err);
     }
