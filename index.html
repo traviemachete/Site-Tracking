@@ -1,16 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <title>Site Tracking</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <title>WTP Tracking</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>WTP Tracking</h1>
   <div id="map"></div>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div><span class="dot" style="background:#2ecc71"></span>ใช้งาน + อยู่ในประกัน</div>
+    <div><span class="dot" style="background:#bdc3c7"></span>ใช้งาน + หมดประกัน</div>
+    <div><span class="dot" style="background:#e74c3c"></span>ปิดใช้งาน</div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- App JS -->
   <script src="script.js"></script>
 </body>
 </html>
