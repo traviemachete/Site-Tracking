@@ -207,7 +207,6 @@ async function renderAllSheets() {
       // Popup = ใช้ข้อมูลตัวแทน (พร้อมจำนวนรายการในพื้นที่)
       m.bindPopup(`
         <b>${group.place}</b><br/>
-        รายการในพื้นที่นี้: ${group.items.length}<br/>
         Type: ${rep.type}<br/>
         ปีงบประมาณ: ${rep.year || '-'}<br/>
         สถานะ: ${rep.status}<br/>
