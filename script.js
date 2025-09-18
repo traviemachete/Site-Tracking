@@ -50,10 +50,10 @@ async function renderAllSheets() {
         const popupText = `
           <b>${row[areaIdx]}</b><br>
           ประเภท: ${row[typeIdx]}<br>
-          สถานะ: ${status}<br>
+          สถานะ: ${row[statusIdx]}<br>
           ผู้ดูแล: ${row[nameIdx]}<br>
           เบอร์โทร: ${row[phoneIdx]}<br>
-          หมดประกัน: ${warranty}
+          หมดประกัน: ${row[warrantyIdx]}<br>
         `;
 
         if (!isNaN(lat) && !isNaN(lng)) {
