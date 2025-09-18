@@ -30,7 +30,7 @@ const num = v => {
 function markerColor(status, warrantyStatus) {
   const st = (status || '').trim();
   const ws = (warrantyStatus || '').trim();
-  if (st === 'ใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
+  if (st === 'เปิดใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
   if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน') return '#0B00E0'; // blue
   if (st === 'ปิดใช้งานชั่วคราว') return '#EB7302'; // orange
   if (st === 'ปิดใช้งาน')                      return '#EB020A'; // red
