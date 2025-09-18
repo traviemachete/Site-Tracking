@@ -60,15 +60,15 @@ async function renderAllSheets() {
 
       const col = key => headers.indexOf(key);
 
-      const idxLat          = col('Lat');
-      const idxLng          = col('Long');
-      const idxPlace        = col('พื้นที่');
-      const idxType         = col('Type');
-      const idxStatus       = col('สถานะ');           // ใช้งาน/ปิดใช้งาน
-      const idxWStatus      = col('สถานะประกัน');     // อยู่ในประกัน/หมดประกัน
-      const idxContactName  = col('ชื่อผู้ดูแล');
-      const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
-      const idxWarrantyDate = col('วันที่หมดระยะประกัน');
+      const idxLat          = findCol('Lat');
+      const idxLng          = findCol('Long');
+      const idxPlace        = findCol('พื้นที่');
+      const idxType         = findCol('Type');
+      const idxStatus       = findCol('สถานะ');
+      const idxWStatus      = findCol('สถานะประกัน', ['สถานะ ประกัน', 'สถานะ-ประกัน']);
+      const idxContactName  = findCol('ชื่อผู้ดูแล');
+      const idxContactPhone = findCol('เบอร์โทร/ผู้ดูแล', ['เบอร์โทร / ผู้ดูแล']);
+      const idxWarrantyDate = findCol('วันที่หมดระยะประกัน', ['วันหมดระยะประกัน']);
 
       rows.forEach((r) => {
         const lat = num(r[idxLat]);
