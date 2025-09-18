@@ -1,4 +1,4 @@
-// ====== script.js ====== 
+// ====== script.js (นับจาก row) ======
 const SHEET_ID    = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ';
 const SHEET_NAMES = [
   'เอน คอนเนค',
@@ -55,13 +55,17 @@ async function fetchSheetData(sheetName) {
 }
 
 // ===== State =====
-const allMarkers = []; // { marker, props: { type, year, warranty, status, place } }
+// เก็บ "ทุกแถว" จากทุกชีตไว้ที่นี่ (แม้ไม่มีพิกัด)
+const allRows = [];  // { id, props: { place,type,year,warranty,status, lat, lng, ... } }
+// map ระหว่าง row -> marker (เฉพาะแถวที่มีพิกัด)
+const markerByRowId = new Map(); // id -> Leaflet marker
+// ค่าไว้สร้าง dropdown
 const uniqueVals = { type: new Set(), year: new Set(), warranty: new Set(), status: new Set() };
 
 // ===== Populate <select> with unique values =====
 function populateSelect(selectEl, valuesSet) {
   const values = [...valuesSet].filter(v => v && v !== '-').sort((a,b)=> String(a).localeCompare(String(b), 'th'));
-  // Clear (keep the first 'ทั้งหมด')
+  // เคลียร์ (เหลือ option แรก "ทั้งหมด")
   selectEl.length = 1;
   for (const v of values) {
     const opt = document.createElement('option');
@@ -71,7 +75,7 @@ function populateSelect(selectEl, valuesSet) {
   }
 }
 
-// ===== Apply filters (show/hide markers) =====
+// ===== Apply filters (นับจาก allRows และแสดง/ซ่อน marker ที่แมตช์) =====
 function applyFilters() {
   const fType     = (selType.value || '').trim();
   const fYear     = (selYear.value || '').trim();
@@ -79,25 +83,29 @@ function applyFilters() {
   const fStatus   = (selStatus.value || '').trim();
 
   let shown = 0;
-  for (const item of allMarkers) {
-    const { marker, props } = item;
-    const match =
-      (!fType     || props.type     === fType) &&
-      (!fYear     || props.year     === fYear) &&
-      (!fWarranty || props.warranty === fWarranty) &&
-      (!fStatus   || props.status   === fStatus);
 
-    const onMap = map.hasLayer(marker);
-    if (match && !onMap) {
-      marker.addTo(map);
-    } else if (!match && onMap) {
-      marker.removeFrom(map);
+  for (const row of allRows) {
+    const p = row.props;
+    const match =
+      (!fType     || p.type     === fType) &&
+      (!fYear     || p.year     === fYear) &&
+      (!fWarranty || p.warranty === fWarranty) &&
+      (!fStatus   || p.status   === fStatus);
+
+    // อัปเดต marker บนแผนที่เฉพาะแถวที่มี marker
+    const m = markerByRowId.get(row.id);
+    if (m) {
+      const onMap = map.hasLayer(m);
+      if (match && !onMap) m.addTo(map);
+      else if (!match && onMap) m.removeFrom(map);
     }
+
     if (match) shown++;
   }
 
+  // นับจากจำนวน "แถว" ทั้งหมด และจำนวนที่ตรงตัวกรอง
   matchCount.textContent = String(shown);
-  totalCount.textContent = String(allMarkers.length);
+  totalCount.textContent = String(allRows.length);
 }
 
 // ===== Reset filters =====
@@ -125,17 +133,16 @@ async function renderAllSheets() {
       const idxLng          = col('Long');
       const idxPlace        = col('พื้นที่');
       const idxType         = col('Type');
-      const idxStatus       = col('สถานะ');           // ใช้งาน/ปิดใช้งาน
-      const idxWStatus      = col('สถานะประกัน');     // อยู่ในประกัน/หมดประกัน
-      const idxBudgetYear   = col('ปีงบประมาณ');       // ✅ เพิ่มปีงบประมาณ
+      const idxStatus       = col('สถานะ');
+      const idxWStatus      = col('สถานะประกัน');
+      const idxBudgetYear   = col('ปีงบประมาณ');
       const idxContactName  = col('ชื่อผู้ดูแล');
       const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
       const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-      rows.forEach((r) => {
+      rows.forEach((r, i) => {
         const lat = num(r[idxLat]);
         const lng = num(r[idxLng]);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
         const place        = (r[idxPlace] || '-').toString().trim();
         const type         = (r[idxType] || '-').toString().trim();
@@ -146,67 +153,66 @@ async function renderAllSheets() {
         const contactPhone = (r[idxContactPhone] || '-').toString().trim();
         const warrantyDate = (r[idxWarrantyDate] || '-').toString().trim();
 
-        // เก็บ unique values สำหรับสร้างตัวเลือก filter
-        if (type)     uniqueVals.type.add(type);
-        if (year)     uniqueVals.year.add(year);
-        if (wStatus)  uniqueVals.warranty.add(wStatus);
-        if (status)   uniqueVals.status.add(status);
+        // เก็บค่า unique สำหรับสร้างตัวเลือก filter (จากทุกแถว)
+        if (type)    uniqueVals.type.add(type);
+        if (year)    uniqueVals.year.add(year);
+        if (wStatus) uniqueVals.warranty.add(wStatus);
+        if (status)  uniqueVals.status.add(status);
 
-        const color = markerColor(status, wStatus);
-        const marker = L.circleMarker([lat, lng], {
-          radius: 7,
-          color,
-          fillColor: color,
-          fillOpacity: 0.85,
-          weight: 1
-        });
+        // --- เก็บเป็น "row" เสมอ แม้ไม่มีพิกัด ---
+        const id = `${name}::${i+2}`; // อ้างอิงชีต+เลขแถว (แถว header คือบรรทัด 1 เลยบวก 2)
+        const props = { place, type, year, warranty: wStatus, status, lat, lng,
+                        contactName, contactPhone, warrantyDate };
+        allRows.push({ id, props });
 
-        // Tooltip hover = ชื่อพื้นที่
-        marker.bindTooltip(String(place), {
-          sticky: true,
-          direction: 'top',
-          offset: [0, -6],
-          opacity: 0.95
-        });
+        // --- สร้าง marker เฉพาะแถวที่มีพิกัดเท่านั้น ---
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          const color = markerColor(status, wStatus);
+          const marker = L.circleMarker([lat, lng], {
+            radius: 7,
+            color,
+            fillColor: color,
+            fillOpacity: 0.85,
+            weight: 1
+          });
 
-        // Popup รายละเอียด
-        marker.bindPopup(`
-          <b>${place}</b><br/>
-          Type: ${type}<br/>
-          ปีงบประมาณ: ${year || '-'}<br/>
-          สถานะ: ${status}<br/>
-          สถานะประกัน: ${wStatus}<br/>
-          วันที่หมดระยะประกัน: ${warrantyDate}<br/>
-          ผู้ดูแล: ${contactName}<br/>
-          เบอร์โทร: ${contactPhone}
-        `);
+          // Tooltip hover = ชื่อพื้นที่
+          marker.bindTooltip(String(place), {
+            sticky: true,
+            direction: 'top',
+            offset: [0, -6],
+            opacity: 0.95
+          });
 
-        // ใส่ marker ลง map + เก็บ state
-        marker.addTo(map);
-        allMarkers.push({
-          marker,
-          props: {
-            place,
-            type,
-            year,
-            warranty: wStatus,
-            status
-          }
-        });
+          // Popup รายละเอียด
+          marker.bindPopup(`
+            <b>${place}</b><br/>
+            Type: ${type}<br/>
+            ปีงบประมาณ: ${year || '-'}<br/>
+            สถานะ: ${status}<br/>
+            สถานะประกัน: ${wStatus}<br/>
+            วันที่หมดระยะประกัน: ${warrantyDate}<br/>
+            ผู้ดูแล: ${contactName}<br/>
+            เบอร์โทร: ${contactPhone}
+          `);
+
+          marker.addTo(map);                   // แสดงครั้งแรกทั้งหมด
+          markerByRowId.set(id, marker);       // map จาก row -> marker
+        }
       });
     } catch (e) {
       console.error('Sheet error:', name, e);
     }
   }
 
-  // สร้างรายการตัวเลือกจากค่าจริงในชีท
+  // เติมตัวเลือกจากค่าจริงในชีท
   populateSelect(selType, uniqueVals.type);
   populateSelect(selYear, uniqueVals.year);
   populateSelect(selWarranty, uniqueVals.warranty);
   populateSelect(selStatus, uniqueVals.status);
 
-  // อัปเดตตัวนับครั้งแรก
-  totalCount.textContent = String(allMarkers.length);
+  // อัปเดตตัวนับครั้งแรก (นับจากจำนวนแถวทั้งหมด)
+  totalCount.textContent = String(allRows.length);
   applyFilters();
 }
 
