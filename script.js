@@ -44,7 +44,7 @@ async function renderAllSheets() {
           สถานะ: ${rowData['สถานะ']}<br>
           ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
           เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
-          หมดประกัน: ${warranty}
+          หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
         `;
 
         if (!isNaN(lat) && !isNaN(lng)) {
