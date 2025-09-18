@@ -1,6 +1,6 @@
-const SHEET_ID = '1AbCdEFGH_abc123456'; // เปลี่ยนตรงนี้
-const SHEET_NAME = 'เอก ดอนเขว้า';
-const API_KEY = 'YOUR_GOOGLE_API_KEY'; // ใช้แบบ public key ได้
+const SHEET_ID = '1OF8QYGVpeiKjVToRvJQfTuKUreZTOcc9yZYxQXlh5vQ/'; // เปลี่ยนตรงนี้
+const SHEET_NAME = ['เอน คอนเนทค', 'อินโนวาเทค โซลูชั่น', 'พินพอยท์ อินโนเวชั่น', 'เอสทีอาร์ อินโนเวชั่น', 'อีสาน-ส่วนกลาง', 'เขต 7'];
+const API_KEY = 'AIzaSyBJ99_hsyJJQe4SyntE4SzORk8S0VhNF7I'; // ใช้แบบ public key ได้
 
 const map = L.map('map').setView([15.5, 101.0], 7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
