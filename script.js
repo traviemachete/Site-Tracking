@@ -33,7 +33,7 @@ function markerColor(status, warrantyStatus) {
   if (st === 'เปิดใช้งาน' && ws === 'อยู่ในประกัน') return '#00E036'; // green
   if (st === 'เปิดใช้งาน' && ws === 'หมดประกัน') return '#0B00E0'; // blue
   if (st === 'ปิดใช้งานชั่วคราว') return '#EB7302'; // orange
-  if (st === 'ปิดใช้งาน')                      return '#EB020A'; // red
+  if (st === 'ปิดใช้งาน') return '#EB020A'; // red
   return '#737373'; // fallback gray
 }
 
@@ -70,41 +70,44 @@ async function renderAllSheets() {
       const idxContactPhone = col('เบอร์โทร/ผู้ดูแล');
       const idxWarrantyDate = col('วันที่หมดระยะประกัน');
 
-  rows.forEach((r) => {
-    const lat = num(r[idxLat]);
-    const lng = num(r[idxLng]); 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return; 
-    const place = r[idxPlace] || '-'; 
-    const type = r[idxType] || '-'; 
-    const status = (r[idxStatus] || '').trim(); 
-    const wStatus = (r[idxWStatus] || '').trim(); 
-    const contactName = r[idxContactName] || '-'; 
-    const contactPhone = r[idxContactPhone] || '-'; 
-    const warrantyDate = r[idxWarrantyDate] || '-'; 
-    const color = markerColor(status, wStatus); 
-    const marker = L.circleMarker([lat, lng], {
-      radius: 7, 
-      color, 
-      fillColor: color, 
-      fillOpacity: 0.85, 
-      weight: 1 
-    }); 
-    
-    marker.bindPopup( 
-      <b>${place}</b><br/> 
-      ประเภท: ${type}<br/> 
-      สถานะ: ${status}<br/> 
-      สถานะประกัน: ${wStatus}<br/>
-      วันที่หมดระยะประกัน: ${warrantyDate}<br/> 
-      ผู้ดูแล: ${contactName}<br/> 
-      เบอร์โทร: ${contactPhone} 
-    ); 
-      marker.addTo(map); 
-    }); 
-  } catch (e) { 
-    console.error('Sheet error:', name, e); 
+      rows.forEach((r) => {
+        const lat = num(r[idxLat]);
+        const lng = num(r[idxLng]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const place        = r[idxPlace] || '-';
+        const type         = r[idxType] || '-';
+        const status       = (r[idxStatus]  || '').trim();
+        const wStatus      = (r[idxWStatus] || '').trim();
+        const contactName  = r[idxContactName]  || '-';
+        const contactPhone = r[idxContactPhone] || '-';
+        const warrantyDate = r[idxWarrantyDate] || '-';
+
+        const color = markerColor(status, wStatus);
+        const marker = L.circleMarker([lat, lng], {
+          radius: 7,
+          color,
+          fillColor: color,
+          fillOpacity: 0.85,
+          weight: 1
+        });
+
+        marker.bindPopup(`
+          <b>${place}</b><br/>
+          ประเภท: ${type}<br/>
+          สถานะ: ${status}<br/>
+          สถานะประกัน: ${wStatus}<br/>
+          วันที่หมดระยะประกัน: ${warrantyDate}<br/>
+          ผู้ดูแล: ${contactName}<br/>
+          เบอร์โทร: ${contactPhone}
+        `);
+
+        marker.addTo(map);
+      });
+    } catch (e) {
+      console.error('Sheet error:', name, e);
+    }
   }
- } 
-} 
+}
 
 renderAllSheets();
