@@ -31,8 +31,8 @@ async function renderAllSheets() {
           <b>${rowData['พื้นที่']}</b><br>
           ประเภท: ${rowData['Type']}<br>
           สถานะ: ${status}<br>
-          ผู้ติดต่อ: ${rowData['ชื่อผู้ติดต่อ']}<br>
-          โทร: ${rowData['เบอร์โทรผู้ติดต่อ']}<br>
+          ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
+          เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
           หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
         `;
 
