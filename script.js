@@ -92,6 +92,14 @@ async function renderAllSheets() {
           weight: 1
         });
 
+        // ✅ แสดงชื่อ "พื้นที่" เมื่อเอาเมาส์วาง (hover)
+        marker.bindTooltip(String(place), {
+          sticky: true,          // tooltip จะติดตามเมาส์
+          direction: 'top',      // โผล่ด้านบน
+          offset: [0, -6],       // ขยับขึ้นเล็กน้อย
+          opacity: 0.95
+        });
+
         marker.bindPopup(`
           <b>${place}</b><br/>
           ประเภท: ${type}<br/>
