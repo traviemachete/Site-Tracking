@@ -41,7 +41,7 @@ async function renderAllSheets() {
         const popupText = `
           <b>${rowData['พื้นที่']}</b><br>
           ประเภท: ${rowData['Type']}<br>
-          สถานะ: ${status}<br>
+          สถานะ: ${rowData['สถานะ']}<br>
           ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
           เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
           หมดประกัน: ${warranty}
