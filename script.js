@@ -11,6 +11,16 @@ async function fetchSheetData(sheetName) {
   return res.json();
 }
 
+function getColor(status, warrantyDate) {
+  const now = new Date();
+  const warranty = new Date(warrantyDate);
+
+  if (status === 'เปิดใช้งาน' && warranty >= now) return 'green';   // อยู่ในประกัน
+  if (status === 'เปิดใช้งาน' && warranty < now) return 'gray';     // หมดประกัน
+  if (status === 'ปิดใช้งาน') return 'red';                          // ปิดใช้งาน
+  return 'blue'; // fallback
+}
+
 async function renderAllSheets() {
   for (const name of SHEET_NAMES) {
     try {
@@ -27,20 +37,20 @@ async function renderAllSheets() {
         const lat = parseFloat(rowData['Lat']);
         const lng = parseFloat(rowData['Long']);
         const status = rowData['สถานะ'];
+        const warranty = rowData['วันที่หมดระยะประกัน'];
         const popupText = `
           <b>${rowData['พื้นที่']}</b><br>
           ประเภท: ${rowData['Type']}<br>
           สถานะ: ${status}<br>
           ผู้ดูแล: ${rowData['ชื่อผู้ดูแล']}<br>
           เบอร์โทร: ${rowData['เบอร์โทร/ผู้ดูแล']}<br>
-          หมดประกัน: ${rowData['วันที่หมดระยะประกัน']}
+          หมดประกัน: ${warranty}
         `;
 
         if (!isNaN(lat) && !isNaN(lng)) {
           L.circleMarker([lat, lng], {
             radius: 8,
-            color: status === 'เปิดใช้งาน' ? 'green' :
-                   status === 'ไม่สามารถใช้งาน' ? 'red' : 'gray',
+            color: getColor(status, warranty),
             fillOpacity: 0.7
           }).bindPopup(popupText).addTo(map);
         }
