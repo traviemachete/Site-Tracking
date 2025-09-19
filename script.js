@@ -322,3 +322,23 @@ btnReset.addEventListener('click', resetFilters);
 
 // Run
 renderAllSheets();
+
+/* ===== toggle หุบไปด้านขวา ===== */
+const sideStack   = document.getElementById('side-stack');
+const stackToggle = document.getElementById('stack-toggle');
+
+function setStackHidden(hidden){
+  sideStack.classList.toggle('hidden', hidden);
+  stackToggle.setAttribute('aria-expanded', String(!hidden));
+  try { localStorage.setItem('stackHidden', hidden ? '1' : '0'); } catch {}
+}
+
+// โหลดสถานะเดิม
+try {
+  const saved = localStorage.getItem('stackHidden');
+  if (saved === '1') setStackHidden(true);
+} catch {}
+
+stackToggle.addEventListener('click', () => {
+  setStackHidden(!sideStack.classList.contains('hidden'));
+});
