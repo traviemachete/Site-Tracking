@@ -11,10 +11,13 @@
 <body>
   <div id="map"></div>
 
-  <!-- Right stack: filter + stats (no overlap) -->
-  <div class="side-stack">
+  <!-- ปุ่มซ่อน/แสดงทั้ง stack -->
+  <button id="stack-toggle" class="stack-toggle" aria-expanded="true" title="ซ่อน/แสดงแผง">▸</button>
+
+  <!-- กองด้านขวา (Filter + Summary) -->
+  <div class="side-stack" id="side-stack">
     <!-- Filter Panel -->
-    <div class="filter-panel">
+    <div class="filter-panel card">
       <div class="filter-row">
         <label>Type
           <select id="filter-type"><option value="">ทั้งหมด</option></select>
@@ -37,8 +40,8 @@
       </div>
     </div>
 
-    <!-- Stats Panel (Summary Card) -->
-    <div class="stats-panel">
+    <!-- Summary Panel -->
+    <div class="stats-panel card">
       <div class="stats-header">สรุปโครงการ (ตามตัวกรองปัจจุบัน)</div>
       <div class="stats-grid">
         <div class="stat"><div class="stat-label">ใช้งาน</div><div class="stat-value" id="stat-active">0</div></div>
@@ -54,7 +57,7 @@
 
       <div class="stats-subheader">จำนวนตาม Type</div>
       <table class="type-table">
-        <thead><tr><th>Type</th><th>จำนวน</th></tr></thead>
+        <thead><tr><th>Type</th><th class="th-right">จำนวน</th></tr></thead>
         <tbody id="type-body"></tbody>
       </table>
     </div>
