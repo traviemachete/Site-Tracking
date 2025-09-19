@@ -43,11 +43,53 @@ function markerColor(status, warrantyStatus) {
   return '#737373';
 }
 
-async function fetchSheetData(sheetName) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${API_KEY}`;
+/**
+ * ดึงข้อมูลชีทแบบ includeGridData เพื่อให้รู้ว่า row ไหนถูกซ่อน
+ * คืนค่า: { headers: string[], rows: string[][] } (rows = เฉพาะแถวที่ "ไม่ถูกซ่อน")
+ */
+async function fetchVisibleRows(sheetName) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`
+            + `?includeGridData=true&ranges=${encodeURIComponent(sheetName)}&key=${API_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) { console.error('Load sheet failed:', sheetName, res.status, res.statusText); return null; }
-  return res.json();
+  if (!res.ok) {
+    console.error('Load sheet failed:', sheetName, res.status, res.statusText);
+    return { headers: [], rows: [] };
+  }
+  const data = await res.json();
+
+  const sheet = (data.sheets || []).find(s => s?.properties?.title === sheetName);
+  const grid  = sheet?.data?.[0];
+  const rowData = grid?.rowData || [];
+  const rowMeta = grid?.rowMetadata || []; // มีค่าสถานะแถวถูกซ่อน
+
+  if (!rowData.length) return { headers: [], rows: [] };
+
+  // อ่านหัวตาราง = แถวแรกที่ "ไม่ถูกซ่อน" (ปกติคือแถว 1)
+  let headerIdx = 0;
+  while (headerIdx < rowData.length) {
+    const hiddenHeader = !!(rowMeta?.[headerIdx]?.hiddenByUser || rowMeta?.[headerIdx]?.hiddenByFilter);
+    if (!hiddenHeader) break;
+    headerIdx++;
+  }
+  const headers = (rowData[headerIdx]?.values || []).map(c =>
+    (c?.formattedValue ?? '').toString().trim()
+  );
+
+  // อ่านแถวข้อมูล: ข้ามทุกแถวที่ถูกซ่อน
+  const rows = [];
+  for (let i = headerIdx + 1; i < rowData.length; i++) {
+    const hidden = !!(rowMeta?.[i]?.hiddenByUser || rowMeta?.[i]?.hiddenByFilter);
+    if (hidden) continue; // ✅ ข้ามแถวที่ซ่อน
+
+    const vals = (rowData[i]?.values || []).map(c => (c?.formattedValue ?? '').toString().trim());
+    // ข้ามแถวที่ว่างทั้งแถว (กัน noise)
+    const hasAny = vals.some(v => v !== '');
+    if (!hasAny) continue;
+
+    rows.push(vals);
+  }
+
+  return { headers, rows };
 }
 
 // ===== State =====
@@ -57,7 +99,6 @@ const uniqueVals  = { type: new Set(), year: new Set(), warranty: new Set(), sta
 
 // สำหรับ popup (เลือกแถวแรกเป็นตัวแทน)
 function pickRepresentative(items) {
-  // เลือกรายการแรกที่มีพิกัด; ถ้าไม่มีเลยก็เลือกตัวแรก
   const withCoord = items.find(it => Number.isFinite(it.lat) && Number.isFinite(it.lng));
   return withCoord || items[0];
 }
@@ -82,7 +123,6 @@ function groupMatchesFilter(group) {
   const fWarranty = (selWarranty.value || '').trim();
   const fStatus   = (selStatus.value || '').trim();
 
-  // เร็วสุดใช้ set เช็คก่อน (OR logic ภายในพื้นที่)
   if (fType     && !group.typeSet.has(fType))         return false;
   if (fYear     && !group.yearSet.has(fYear))         return false;
   if (fWarranty && !group.warrantySet.has(fWarranty)) return false;
@@ -96,7 +136,6 @@ function applyFilters() {
   for (const group of placeGroups.values()) {
     const match = groupMatchesFilter(group);
 
-    // แสดง/ซ่อน marker ของ "พื้นที่" นี้
     const m = group.marker;
     if (m) {
       const onMap = map.hasLayer(m);
@@ -123,11 +162,9 @@ function resetFilters() {
 async function renderAllSheets() {
   for (const name of SHEET_NAMES) {
     try {
-      const data = await fetchSheetData(name);
-      if (!data || !data.values || data.values.length < 2) continue;
+      const { headers, rows } = await fetchVisibleRows(name); // ✅ ใช้เฉพาะแถวที่ "ไม่ถูกซ่อน"
+      if (!headers.length || !rows.length) continue;
 
-      const headers = data.values[0].map(h => (h || '').trim());
-      const rows    = data.values.slice(1);
       const col = key => headers.indexOf(key);
 
       const idxLat          = col('Lat');
@@ -204,7 +241,7 @@ async function renderAllSheets() {
         sticky: true, direction: 'top', offset: [0, -6], opacity: 0.95
       });
 
-      // Popup = ใช้ข้อมูลตัวแทน (พร้อมจำนวนรายการในพื้นที่)
+      // Popup = ใช้ข้อมูลตัวแทน
       m.bindPopup(`
         <b>${group.place}</b><br/>
         Type: ${rep.type}<br/>
@@ -227,7 +264,7 @@ async function renderAllSheets() {
   populateSelect(selWarranty, uniqueVals.warranty);
   populateSelect(selStatus, uniqueVals.status);
 
-  // อัปเดตตัวนับครั้งแรก (นับจำนวน "พื้นที่ยูนีก")
+  // อัปเดตตัวนับครั้งแรก (นับจำนวน "พื้นที่ยูนีก" จากแถวที่ไม่ถูกซ่อนเท่านั้น)
   totalCount.textContent = String(placeGroups.size);
   applyFilters();
 }
