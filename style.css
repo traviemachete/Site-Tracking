@@ -1,52 +1,40 @@
-/* ====== style.css ====== */
+/* ====== style.css (responsive) ====== */
 html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
 #map { height: 100%; width: 100%; }
 
-/* กล่องการ์ดมาตรฐาน */
-.card{
-  background:#fff; border:1px solid #ddd; border-radius:10px;
-  padding:12px 14px; box-shadow:0 4px 12px rgba(0,0,0,.12);
-}
+/* การ์ดมาตรฐาน */
+.card{ background:#fff; border:1px solid #ddd; border-radius:10px; padding:12px 14px; box-shadow:0 4px 12px rgba(0,0,0,.12); }
 
-/* กองด้านขวา (ซ่อนทั้งกองได้) */
+/* กองด้านขวา (จอใหญ่) */
 .side-stack{
-  position: absolute;
-  top: 14px; right: 14px;
-  z-index: 1000;
-  display: flex; flex-direction: column;
-  gap: 12px; max-width: 420px;
+  position:absolute; top:14px; right:14px; z-index:1000;
+  display:flex; flex-direction:column; gap:12px; max-width:420px;
   transition: transform .25s ease, opacity .25s ease;
 }
-.side-stack.hidden{ transform: translateX(calc(100% + 16px)); opacity: 0; pointer-events: none; }
+.side-stack.hidden{ transform:translateX(calc(100% + 16px)); opacity:0; pointer-events:none; }
 
-/* ปุ่มซ่อน/แสดงกองด้านขวา */
+/* ปุ่มซ่อน/แสดง (จอใหญ่) */
 .stack-toggle{
-  position: absolute;
-  top: 14px; right: 14px;
-  z-index: 1001;
-  width: 28px; height: 28px; border-radius: 14px;
-  border: 1px solid #d0d5dd; background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.12);
-  cursor: pointer; font-weight: 700;
-  display: grid; place-items: center;
-  transition: transform .25s ease;
+  position:absolute; top:14px; right:14px; z-index:1001;
+  width:28px; height:28px; border-radius:14px; border:1px solid #d0d5dd; background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer; font-weight:700;
+  display:grid; place-items:center; transition:transform .25s ease;
 }
-/* หมุนลูกศรเมื่อซ่อน */
-.side-stack.hidden ~ .stack-toggle{ transform: rotate(180deg); }
+.side-stack.hidden ~ .stack-toggle{ transform:rotate(180deg); }
 
 /* ฟิลเตอร์ */
-.filter-row{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
-.filter-row label{ display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
-.filter-row select{ padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; font-size: 13px; }
-.filter-actions{ display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; }
-#btn-reset{ padding: 6px 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #f7f7f7; cursor: pointer; font-weight: 600; }
-#btn-reset:hover{ background: #efefef; }
-.count{ font-weight: 600; }
+.filter-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
+.filter-row label{ display:flex; flex-direction:column; gap:6px; font-weight:600; }
+.filter-row select{ padding:6px 8px; border:1px solid #d0d5dd; border-radius:8px; background:#fff; font-size:13px; }
+.filter-actions{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; }
+#btn-reset{ padding:6px 10px; border:1px solid #d0d5dd; border-radius:8px; background:#f7f7f7; cursor:pointer; font-weight:600; }
+#btn-reset:hover{ background:#efefef; }
+.count{ font-weight:600; }
 
 /* สรุป */
-.stats-header{ font-weight: 800; margin-bottom: 8px; }
-.stats-grid{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.stats-grid.two{ grid-template-columns: 1fr 1fr; }
+.stats-header{ font-weight:800; margin-bottom:8px; }
+.stats-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+.stats-grid.two{ grid-template-columns:1fr 1fr; }
 .stat{ background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; text-align:center; }
 .stat-label{ color:#475569; font-weight:700; }
 .stat-value{ font-size:20px; font-weight:900; margin-top:4px; }
@@ -56,8 +44,8 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
 .type-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
 .type-table th, .type-table td{ padding:6px 8px; border-bottom:1px solid #eee; }
 .type-table th{ text-align:left; color:#475569; }
-.type-table .th-right{ text-align:right; }         /* หัว “จำนวน” ชิดขวา */
-.type-table td:last-child{ text-align:right; font-weight:700; } /* ตัวเลขชิดขวา */
+.type-table .th-right{ text-align:right; }
+.type-table td:last-child{ text-align:right; font-weight:700; }
 
 /* Legend */
 .legend{
@@ -67,8 +55,46 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
 }
 .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
 
-/* มือถือ */
-@media (max-width: 640px){
-  .side-stack{ max-width: 92vw; }
-  .filter-row{ grid-template-columns: 1fr; }
+/* ---------- Breakpoints ---------- */
+
+/* แท็บเล็ตแนวตั้ง / iPad (≤ 1024px) */
+@media (max-width: 1024px){
+  .side-stack{ max-width: 360px; }
+}
+
+/* มือถือ / จอเล็ก (≤ 768px) → ลิ้นชักล่าง */
+@media (max-width: 768px){
+  /* side-stack เป็น bottom sheet */
+  .side-stack{
+    top:auto; right:10px; left:10px; bottom:10px;
+    max-width:none; width:auto;
+    gap:10px;
+    /* default: โผล่ขึ้นจากล่าง (เมื่อ .hidden ถูกเอาออก) */
+    transform: translateY(0);
+  }
+  /* ซ่อนแบบเลื่อนลง */
+  .side-stack.hidden{
+    transform: translateY(calc(100% + 16px));
+    opacity:1;                /* ยังมองไม่เห็นเพราะอยู่ใต้ขอบล่าง */
+    pointer-events:none;
+  }
+
+  /* ปุ่มย้ายไปมุมขวาล่าง */
+  .stack-toggle{
+    top:auto; bottom:12px; right:12px;
+    width:34px; height:34px; border-radius:17px; font-size:16px;
+  }
+  .side-stack.hidden ~ .stack-toggle{ transform: rotate(90deg); } /* ลูกศรชี้ขึ้น/ลง */
+
+  /* ฟิลเตอร์เป็นคอลัมน์เดียว + ปุ่มใหญ่ขึ้น */
+  .filter-row{ grid-template-columns:1fr; }
+  .filter-row select{ padding:10px 12px; font-size:15px; }
+  #btn-reset{ padding:10px 12px; }
+
+  /* ตารางเลื่อนข้างได้ */
+  .type-table{ display:block; overflow-x:auto; }
+  .type-table table{ min-width: 360px; }
+
+  /* เพิ่มเงา/พื้นหลังให้ตัดกับแผนที่ */
+  .card{ box-shadow:0 10px 24px rgba(0,0,0,.18); }
 }
