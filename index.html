@@ -11,52 +11,72 @@
 <body>
   <div id="map"></div>
 
-  <!-- Right stack: filter + stats (no overlap) -->
-  <div class="side-stack">
-    <!-- Filter Panel -->
-    <div class="filter-panel">
-      <div class="filter-row">
-        <label>Type
-          <select id="filter-type"><option value="">ทั้งหมด</option></select>
-        </label>
-        <label>ปีงบประมาณ
-          <select id="filter-year"><option value="">ทั้งหมด</option></select>
-        </label>
-        <label>สถานะประกัน
-          <select id="filter-warranty"><option value="">ทั้งหมด</option></select>
-        </label>
-        <label>สถานะ
-          <select id="filter-status"><option value="">ทั้งหมด</option></select>
-        </label>
+  <!-- ปุ่มซ่อน/แสดงทั้งกองทางขวา -->
+  <button id="stack-toggle" class="stack-toggle" aria-expanded="true" title="ซ่อน/แสดงแผง">
+    ▸
+  </button>
+
+  <!-- กองด้านขวา: ไม่ทับกัน และซ่อนได้ -->
+  <div class="side-stack" id="side-stack">
+    <!-- Filter Panel (พับได้) -->
+    <div id="filter-panel" class="panel panel-collapsible">
+      <div class="panel-head">
+        <div class="panel-title">ตัวกรอง</div>
+        <button class="collapse-btn" data-collapse="filter-panel" aria-expanded="true" title="พับ/กาง">—</button>
       </div>
-      <div class="filter-actions">
-        <button id="btn-reset">ล้างตัวกรอง</button>
-        <div class="count">จำนวนโครงการที่ตรงเงื่อนไข:
-          <span id="match-count">0</span> / <span id="total-count">0</span>
+      <div class="panel-body">
+        <div class="filter-panel">
+          <div class="filter-row">
+            <label>Type
+              <select id="filter-type"><option value="">ทั้งหมด</option></select>
+            </label>
+            <label>ปีงบประมาณ
+              <select id="filter-year"><option value="">ทั้งหมด</option></select>
+            </label>
+            <label>สถานะประกัน
+              <select id="filter-warranty"><option value="">ทั้งหมด</option></select>
+            </label>
+            <label>สถานะ
+              <select id="filter-status"><option value="">ทั้งหมด</option></select>
+            </label>
+          </div>
+          <div class="filter-actions">
+            <button id="btn-reset">ล้างตัวกรอง</button>
+            <div class="count">จำนวนโครงการที่ตรงเงื่อนไข:
+              <span id="match-count">0</span> / <span id="total-count">0</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Stats Panel (Summary Card) -->
-    <div class="stats-panel">
-      <div class="stats-header">สรุปโครงการ (ตามตัวกรองปัจจุบัน)</div>
-      <div class="stats-grid">
-        <div class="stat"><div class="stat-label">ใช้งาน</div><div class="stat-value" id="stat-active">0</div></div>
-        <div class="stat"><div class="stat-label">ปิดใช้งานชั่วคราว</div><div class="stat-value" id="stat-temp">0</div></div>
-        <div class="stat"><div class="stat-label">ปิดใช้งาน</div><div class="stat-value" id="stat-off">0</div></div>
+    <!-- Stats Panel (พับได้) -->
+    <div id="stats-panel" class="panel panel-collapsible">
+      <div class="panel-head">
+        <div class="panel-title">สรุปโครงการ (ตามตัวกรองปัจจุบัน)</div>
+        <button class="collapse-btn" data-collapse="stats-panel" aria-expanded="true" title="พับ/กาง">—</button>
       </div>
+      <div class="panel-body">
+        <div class="stats-panel">
+          <div class="stats-grid">
+            <div class="stat"><div class="stat-label">ใช้งาน</div><div class="stat-value" id="stat-active">0</div></div>
+            <div class="stat"><div class="stat-label">ปิดใช้งานชั่วคราว</div><div class="stat-value" id="stat-temp">0</div></div>
+            <div class="stat"><div class="stat-label">ปิดใช้งาน</div><div class="stat-value" id="stat-off">0</div></div>
+          </div>
 
-      <div class="stats-subheader">สรุปตามสถานะประกัน</div>
-      <div class="stats-grid two">
-        <div class="stat"><div class="stat-label">อยู่ในประกัน</div><div class="stat-value" id="stat-w-in">0</div></div>
-        <div class="stat"><div class="stat-label">หมดประกัน</div><div class="stat-value" id="stat-w-out">0</div></div>
+          <div class="stats-subheader">สรุปตามสถานะประกัน</div>
+          <div class="stats-grid two">
+            <div class="stat"><div class="stat-label">อยู่ในประกัน</div><div class="stat-value" id="stat-w-in">0</div></div>
+            <div class="stat"><div class="stat-label">หมดประกัน</div><div class="stat-value" id="stat-w-out">0</div></div>
+          </div>
+
+          <div class="stats-subheader">จำนวนตาม Type</div>
+          <table class="type-table">
+            <thead><tr><th>Type</th><th class="th-right">จำนวน</th></tr></thead>
+            <tbody id="type-body"></tbody>
+          </table>
+        </div>
       </div>
-
-      <div class="stats-subheader">จำนวนตาม Type</div>
-      <table class="type-table">
-        <thead><tr><th>Type</th><th>จำนวน</th></tr></thead>
-        <tbody id="type-body"></tbody>
-      </table>
     </div>
   </div>
 
