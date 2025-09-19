@@ -62,39 +62,61 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
   .side-stack{ max-width: 360px; }
 }
 
-/* มือถือ / จอเล็ก (≤ 768px) → ลิ้นชักล่าง */
+
+/* มือถือ / จอเล็ก (≤ 768px) → แปลงเป็นลิ้นชักล่าง */
 @media (max-width: 768px){
-  /* side-stack เป็น bottom sheet */
+  /* side-stack = bottom sheet (ไม่บังเต็มจอ, เลื่อนอ่านได้) */
   .side-stack{
-    top:auto; right:10px; left:10px; bottom:10px;
-    max-width:none; width:auto;
-    gap:10px;
-    /* default: โผล่ขึ้นจากล่าง (เมื่อ .hidden ถูกเอาออก) */
-    transform: translateY(0);
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom)); /* เคารพ safe area iPhone */
+    top: auto;
+    max-height: 70vh;              /* สูงสุด 70% ของหน้าจอ */
+    overflow: auto;                /* ข้างในเลื่อนได้ */
+    border-radius: 14px;
+    gap: 10px;
+    transform: translateY(0);      /* โผล่อยู่เหนือขอบล่าง */
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
   }
-  /* ซ่อนแบบเลื่อนลง */
+  /* ซ่อนแบบเลื่อนลงล่าง + เคารพ safe area */
   .side-stack.hidden{
-    transform: translateY(calc(100% + 16px));
-    opacity:1;                /* ยังมองไม่เห็นเพราะอยู่ใต้ขอบล่าง */
-    pointer-events:none;
+    transform: translateY(calc(100% + 24px + env(safe-area-inset-bottom)));
+    opacity: 1;
+    pointer-events: none;
   }
 
-  /* ปุ่มย้ายไปมุมขวาล่าง */
+  /* ปุ่ม ▸ ย้ายไปมุมขวาล่าง และเคารพ safe area */
   .stack-toggle{
-    top:auto; bottom:12px; right:12px;
-    width:34px; height:34px; border-radius:17px; font-size:16px;
+    position: fixed;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    right: 12px;
+    width: 38px; height: 38px; border-radius: 19px; font-size: 18px;
   }
-  .side-stack.hidden ~ .stack-toggle{ transform: rotate(90deg); } /* ลูกศรชี้ขึ้น/ลง */
+  .side-stack.hidden ~ .stack-toggle{ transform: rotate(90deg); } /* ชี้ขึ้นตอนซ่อน */
 
-  /* ฟิลเตอร์เป็นคอลัมน์เดียว + ปุ่มใหญ่ขึ้น */
-  .filter-row{ grid-template-columns:1fr; }
-  .filter-row select{ padding:10px 12px; font-size:15px; }
-  #btn-reset{ padding:10px 12px; }
+  /* ฟิลเตอร์เป็นคอลัมน์เดียว + ปุ่ม/ตัวหนังสือใหญ่ขึ้นอ่านง่าย */
+  .filter-row{ grid-template-columns: 1fr; }
+  .filter-row select{ padding: 10px 12px; font-size: 15px; }
+  .filter-actions{ flex-direction: column; align-items: stretch; gap: 8px; }
+  .count{ text-align: center; }
 
-  /* ตารางเลื่อนข้างได้ */
-  .type-table{ display:block; overflow-x:auto; }
+  /* ตาราง Type เลื่อนได้แนวนอน */
+  .type-table{ display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .type-table table{ min-width: 360px; }
 
-  /* เพิ่มเงา/พื้นหลังให้ตัดกับแผนที่ */
-  .card{ box-shadow:0 10px 24px rgba(0,0,0,.18); }
+  /* เลื่อน legend ขึ้นเล็กน้อยกันชนขอบล่าง */
+  .legend{
+    bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+}
+
+/* แท็บเล็ตแนวตั้ง / iPad (≤ 1024px) – บีบความกว้างแผงลงหน่อย */
+@media (max-width: 1024px){
+  .side-stack{ max-width: 360px; }
+}
+
+/* ป้องกันอาการลากทั้งหน้าเวลาเลื่อนลิ้นชักบน iOS */
+html, body{
+  overscroll-behavior-y: contain;
 }
