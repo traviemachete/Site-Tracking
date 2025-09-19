@@ -51,10 +51,52 @@
     <div class="filter-actions">
       <button id="btn-reset">ล้างตัวกรอง</button>
       <div class="count">
-        จำนวนโครงการ:
+        จำนวนโครงการที่ตรงเงื่อนไข:
         <span id="match-count">0</span> / <span id="total-count">0</span>
       </div>
     </div>
+  </div>
+
+  <!-- Stats Panel (Summary Card) -->
+  <div class="stats-panel">
+    <div class="stats-header">สรุปโครงการ (ตามตัวกรองปัจจุบัน)</div>
+
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">ใช้งาน</div>
+        <div class="stat-value" id="stat-active">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">ปิดใช้งานชั่วคราว</div>
+        <div class="stat-value" id="stat-temp">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">ปิดใช้งาน</div>
+        <div class="stat-value" id="stat-off">0</div>
+      </div>
+    </div>
+
+    <div class="stats-subheader">สรุปตามสถานะประกัน</div>
+    <div class="stats-grid two">
+      <div class="stat">
+        <div class="stat-label">อยู่ในประกัน</div>
+        <div class="stat-value" id="stat-w-in">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">หมดประกัน</div>
+        <div class="stat-value" id="stat-w-out">0</div>
+      </div>
+    </div>
+
+    <div class="stats-subheader">จำนวนตาม Type</div>
+    <table class="type-table">
+      <thead>
+        <tr><th>Type</th><th>จำนวน</th></tr>
+      </thead>
+      <tbody id="type-body">
+        <!-- เติมด้วยสคริปต์ -->
+      </tbody>
+    </table>
   </div>
 
   <!-- Legend -->
