@@ -323,7 +323,7 @@ btnReset.addEventListener('click', resetFilters);
 // Run
 renderAllSheets();
 
-/* ===== toggle หุบไปด้านขวา ===== */
+// ===== Toggle หุบไปด้านขวา/ล่าง =====
 const sideStack   = document.getElementById('side-stack');
 const stackToggle = document.getElementById('stack-toggle');
 
@@ -333,10 +333,13 @@ function setStackHidden(hidden){
   try { localStorage.setItem('stackHidden', hidden ? '1' : '0'); } catch {}
 }
 
-// โหลดสถานะเดิม
+// โหลดสถานะเดิม; มือถือซ่อนเป็นค่าเริ่มต้น
 try {
   const saved = localStorage.getItem('stackHidden');
-  if (saved === '1') setStackHidden(true);
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  if (saved === '1' || (saved === null && isMobile)) {
+    setStackHidden(true);
+  }
 } catch {}
 
 stackToggle.addEventListener('click', () => {
